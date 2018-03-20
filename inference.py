@@ -9,7 +9,7 @@ import os
 import sys
 
 import tensorflow as tf
-
+import random
 import deeplab_model
 from utils import preprocessing
 from utils import dataset_util
@@ -58,9 +58,11 @@ def main(unused_argv):
     debug_hook = tf_debug.LocalCLIDebugHook()
     pred_hooks = [debug_hook]
 
+  model_dir = './models/model'#FLAGS.model_dir
+  
   model = tf.estimator.Estimator(
       model_fn=deeplab_model.deeplabv3_model_fn,
-      model_dir=FLAGS.model_dir,
+      model_dir=model_dir,
       params={
           'output_stride': FLAGS.output_stride,
           'batch_size': 1,  # Batch size must be 1 because the images' size may differ
@@ -70,8 +72,12 @@ def main(unused_argv):
           'num_classes': _NUM_CLASSES,
       })
 
-  examples = dataset_util.read_examples_list(FLAGS.infer_data_list)
-  image_files = [os.path.join(FLAGS.data_dir, filename) for filename in examples]
+#     examples = dataset_util.read_examples_list(FLAGS.infer_data_list)
+#     image_files = [os.path.join(FLAGS.data_dir, filename) for filename in examples]
+  
+  img_folder = '/export/JEFFDEANDISK/git/tensorflow-deeplab-v3/dataset/bearwithus'
+  image_files = [os.path.join(img_folder,f) for f in os.listdir(img_folder)]
+  image_files = random.sample(image_files,1)
 
   predictions = model.predict(
         input_fn=lambda: preprocessing.eval_input_fn(image_files),
@@ -89,12 +95,14 @@ def main(unused_argv):
     print("generating:", path_to_output)
     mask = pred_dict['decoded_labels']
     mask = Image.fromarray(mask)
-    plt.axis('off')
-    plt.imshow(mask)
-    plt.savefig(path_to_output, bbox_inches='tight')
+    mask.save(path_to_output)
+    #plt.axis('off')
+    #plt.imshow(mask)
+    #plt.savefig(path_to_output, bbox_inches='tight')
 
 
 if __name__ == '__main__':
+#   print("Init")
   tf.logging.set_verbosity(tf.logging.INFO)
   FLAGS, unparsed = parser.parse_known_args()
   tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
