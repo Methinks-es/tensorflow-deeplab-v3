@@ -17,6 +17,8 @@ from utils import dataset_util
 from PIL import Image
 import matplotlib.pyplot as plt
 
+import configuration as cfg
+
 from tensorflow.python import debug as tf_debug
 
 parser = argparse.ArgumentParser()
@@ -48,6 +50,14 @@ parser.add_argument('--debug', action='store_true',
 
 _NUM_CLASSES = 21
 
+def merge_colors(img):
+    h , w , c = img.shape
+    for i in range(h):
+        for j in range(w):
+            if img[i,j].any():
+                img[i,j] = cfg.values['bear_color']
+    return img
+
 
 def main(unused_argv):
   # Using the Winograd non-fused algorithms provides a small performance boost.
@@ -75,9 +85,9 @@ def main(unused_argv):
 #     examples = dataset_util.read_examples_list(FLAGS.infer_data_list)
 #     image_files = [os.path.join(FLAGS.data_dir, filename) for filename in examples]
   
-  img_folder = '/export/JEFFDEANDISK/git/tensorflow-deeplab-v3/dataset/bearwithus'
+  img_folder = cfg.values['img_folder']
   image_files = [os.path.join(img_folder,f) for f in os.listdir(img_folder)]
-  image_files = random.sample(image_files,1)
+  # image_files = random.sample(image_files, 1)
 
   predictions = model.predict(
         input_fn=lambda: preprocessing.eval_input_fn(image_files),
@@ -93,16 +103,16 @@ def main(unused_argv):
     path_to_output = os.path.join(output_dir, output_filename)
 
     print("generating:", path_to_output)
-    mask = pred_dict['decoded_labels']
+    mask = merge_colors(pred_dict['decoded_labels'])
     mask = Image.fromarray(mask)
     mask.save(path_to_output)
-    #plt.axis('off')
-    #plt.imshow(mask)
+    # plt.axis('off')
+    # plt.imshow(mask)
+    # plt.show()
     #plt.savefig(path_to_output, bbox_inches='tight')
 
 
 if __name__ == '__main__':
-#   print("Init")
   tf.logging.set_verbosity(tf.logging.INFO)
   FLAGS, unparsed = parser.parse_known_args()
   tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
