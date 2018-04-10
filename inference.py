@@ -13,6 +13,7 @@ import random
 import deeplab_model
 from utils import preprocessing
 from utils import dataset_util
+import numpy as np
 
 from PIL import Image
 import matplotlib.pyplot as plt
@@ -50,69 +51,75 @@ parser.add_argument('--debug', action='store_true',
 
 _NUM_CLASSES = 21
 
+
 def merge_colors(img):
-    h , w , c = img.shape
+    h, w, c = img.shape
     for i in range(h):
         for j in range(w):
-            if img[i,j].any():
-                img[i,j] = cfg.values['bear_color']
+            if img[i, j].any():
+                img[i, j] = cfg.values['bear_color']
     return img
 
-
 def main(unused_argv):
-  # Using the Winograd non-fused algorithms provides a small performance boost.
-  os.environ['TF_ENABLE_WINOGRAD_NONFUSED'] = '1'
+    # Using the Winograd non-fused algorithms provides a small performance boost.
+    os.environ['TF_ENABLE_WINOGRAD_NONFUSED'] = '1'
 
-  pred_hooks = None
-  if FLAGS.debug:
-    debug_hook = tf_debug.LocalCLIDebugHook()
-    pred_hooks = [debug_hook]
+    pred_hooks = None
+    if FLAGS.debug:
+        debug_hook = tf_debug.LocalCLIDebugHook()
+        pred_hooks = [debug_hook]
 
-  model_dir = './models/model'#FLAGS.model_dir
-  
-  model = tf.estimator.Estimator(
-      model_fn=deeplab_model.deeplabv3_model_fn,
-      model_dir=model_dir,
-      params={
-          'output_stride': FLAGS.output_stride,
-          'batch_size': 1,  # Batch size must be 1 because the images' size may differ
-          'base_architecture': FLAGS.base_architecture,
-          'pre_trained_model': None,
-          'batch_norm_decay': None,
-          'num_classes': _NUM_CLASSES,
-      })
+    model_dir = './models/model'  # FLAGS.model_dir
 
-#     examples = dataset_util.read_examples_list(FLAGS.infer_data_list)
-#     image_files = [os.path.join(FLAGS.data_dir, filename) for filename in examples]
-  
-  img_folder = cfg.values['img_folder']
-  image_files = [os.path.join(img_folder,f) for f in os.listdir(img_folder)]
-  # image_files = random.sample(image_files, 1)
+    model = tf.estimator.Estimator(
+        model_fn=deeplab_model.deeplabv3_model_fn,
+        model_dir=model_dir,
+        params={
+            'output_stride': FLAGS.output_stride,
+            'batch_size': 1,  # Batch size must be 1 because the images' size may differ
+            'base_architecture': FLAGS.base_architecture,
+            'pre_trained_model': None,
+            'batch_norm_decay': None,
+            'num_classes': _NUM_CLASSES,
+        })
 
-  predictions = model.predict(
+    #     examples = dataset_util.read_examples_list(FLAGS.infer_data_list)
+    #     image_files = [os.path.join(FLAGS.data_dir, filename) for filename in examples]
+
+    img_folder = cfg.values['img_folder']
+    image_files = [os.path.join(img_folder, f) for f in os.listdir(img_folder)]
+    # image_files = random.sample(image_files, 1)
+
+    predictions = model.predict(
         input_fn=lambda: preprocessing.eval_input_fn(image_files),
         hooks=pred_hooks)
 
-  output_dir = FLAGS.output_dir
-  if not os.path.exists(output_dir):
-    os.makedirs(output_dir)
+    output_dir = FLAGS.output_dir
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
 
-  for pred_dict, image_path in zip(predictions, image_files):
-    image_basename = os.path.splitext(os.path.basename(image_path))[0]
-    output_filename = image_basename + '_mask.png'
-    path_to_output = os.path.join(output_dir, output_filename)
+    for pred_dict, image_path in zip(predictions, image_files):
+        image_basename = os.path.splitext(os.path.basename(image_path))[0]
+        # print(pred_dict['classes'].shape)
 
-    print("generating:", path_to_output)
-    mask = merge_colors(pred_dict['decoded_labels'])
-    mask = Image.fromarray(mask)
-    mask.save(path_to_output)
-    # plt.axis('off')
-    # plt.imshow(mask)
-    # plt.show()
-    #plt.savefig(path_to_output, bbox_inches='tight')
+        output_filename = image_basename + '.png'
+        path_to_output = os.path.join(output_dir, output_filename)
+
+        print("generating:", path_to_output)
+        # mask = merge_colors(pred_dict['decoded_labels'])
+
+        label_image = np.squeeze(pred_dict['classes'], axis=2)
+        label_image[label_image > 0] = cfg.values['bear_label']
+        # print([np.max(row) for row in label_image])
+        mask = Image.fromarray(label_image, mode='L')
+        mask.save(path_to_output)
+        # plt.axis('off')
+        # plt.imshow(mask)
+        # plt.show()
+        #plt.savefig(path_to_output, bbox_inches='tight')
 
 
 if __name__ == '__main__':
-  tf.logging.set_verbosity(tf.logging.INFO)
-  FLAGS, unparsed = parser.parse_known_args()
-  tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
+    tf.logging.set_verbosity(tf.logging.INFO)
+    FLAGS, unparsed = parser.parse_known_args()
+    tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)

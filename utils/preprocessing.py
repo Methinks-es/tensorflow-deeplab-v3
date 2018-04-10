@@ -16,8 +16,8 @@ label_colours = [(0, 0, 0),  # 0=background
                  (0, 128, 128), (128, 128, 128), (64, 0, 0), (192, 0, 0), (64, 128, 0),
                  # 11=dining table, 12=dog, 13=horse, 14=motorbike, 15=person
                  (192, 128, 0), (64, 0, 128), (192, 0, 128), (64, 128, 128), (192, 128, 128),
-                 # 16=potted plant, 17=sheep, 18=sofa, 19=train, 20=tv/monitor
-                 (0, 64, 0), (128, 64, 0), (0, 192, 0), (128, 192, 0), (0, 64, 128)]
+                 # 16=potted plant, 17=sheep, 18=sofa, 19=train, 20=tv/monitor 21=bear
+                 (0, 64, 0), (128, 64, 0), (0, 192, 0), (128, 192, 0), (0, 64, 128), (128, 249, 245)]
 
 
 def decode_labels(mask, num_images=1, num_classes=21):

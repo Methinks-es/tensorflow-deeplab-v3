@@ -80,7 +80,7 @@ parser.add_argument('--weight_decay', type=float, default=2e-4,
 parser.add_argument('--debug', action='store_true',
                     help='Whether to use debugger to track down bad values during training.')
 
-_NUM_CLASSES = 21
+_NUM_CLASSES = 22
 _HEIGHT = 513
 _WIDTH = 513
 _DEPTH = 3

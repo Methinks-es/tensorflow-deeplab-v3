@@ -41,7 +41,7 @@ parser.add_argument('--output_stride', type=int, default=16,
                     choices=[8, 16],
                     help='Output stride for DeepLab v3. Currently 8 or 16 is supported.')
 
-_NUM_CLASSES = 21
+_NUM_CLASSES = 22
 
 
 def main(unused_argv):
